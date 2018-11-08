@@ -80,6 +80,7 @@ extern const struct cmd_entry cmd_refresh_client_entry;
 extern const struct cmd_entry cmd_rename_session_entry;
 extern const struct cmd_entry cmd_rename_window_entry;
 extern const struct cmd_entry cmd_resize_pane_entry;
+extern const struct cmd_entry cmd_resize_window_entry;
 extern const struct cmd_entry cmd_respawn_pane_entry;
 extern const struct cmd_entry cmd_respawn_window_entry;
 extern const struct cmd_entry cmd_rotate_window_entry;
@@ -166,6 +167,7 @@ const struct cmd_entry *cmd_table[] = {
 	&cmd_rename_session_entry,
 	&cmd_rename_window_entry,
 	&cmd_resize_pane_entry,
+	&cmd_resize_window_entry,
 	&cmd_respawn_pane_entry,
 	&cmd_respawn_window_entry,
 	&cmd_rotate_window_entry,
@@ -200,6 +202,15 @@ const struct cmd_entry *cmd_table[] = {
 	NULL
 };
 
+void
+cmd_log_argv(int argc, char **argv, const char *prefix)
+{
+	int	i;
+
+	for (i = 0; i < argc; i++)
+		log_debug("%s: argv[%d]=%s", prefix, i, argv[i]);
+}
+
 int
 cmd_pack_argv(int argc, char **argv, char *buf, size_t len)
 {
@@ -208,6 +219,7 @@ cmd_pack_argv(int argc, char **argv, char *buf, size_t len)
 
 	if (argc == 0)
 		return (0);
+	cmd_log_argv(argc, argv, __func__);
 
 	*buf = '\0';
 	for (i = 0; i < argc; i++) {
@@ -240,9 +252,11 @@ cmd_unpack_argv(char *buf, size_t len, int argc, char ***argv)
 
 		arglen = strlen(buf) + 1;
 		(*argv)[i] = xstrdup(buf);
+
 		buf += arglen;
 		len -= arglen;
 	}
+	cmd_log_argv(argc, *argv, __func__);
 
 	return (0);
 }
@@ -401,6 +415,7 @@ retry:
 		xasprintf(cause, "unknown command: %s", name);
 		return (NULL);
 	}
+	cmd_log_argv(argc, argv, entry->name);
 
 	args = args_parse(entry->args.template, argc, argv);
 	if (args == NULL)

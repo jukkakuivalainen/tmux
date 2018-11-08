@@ -1,6 +1,6 @@
 # configure.ac
 
-AC_INIT(tmux, master)
+AC_INIT([tmux], next-2.9)
 AC_PREREQ([2.60])
 
 AC_CONFIG_AUX_DIR(etc)
@@ -35,7 +35,7 @@ AC_USE_SYSTEM_EXTENSIONS
 test "$sysconfdir" = '${prefix}/etc' && sysconfdir=/etc
 
 # Is this --enable-debug?
-test "x$VERSION" = xmaster && enable_debug=yes
+case "x$VERSION" in xnext*) enable_debug=yes;; esac
 AC_ARG_ENABLE(
 	debug,
 	AC_HELP_STRING(--enable-debug, enable debug build flags),
@@ -610,7 +610,16 @@ case "$host_os" in
 	*solaris*)
 		AC_MSG_RESULT(sunos)
 		PLATFORM=sunos
-		MANFORMAT=man
+		case `/usr/bin/nroff --version 2>&1` in
+			*GNU*)
+				# Solaris 11.4 and later use GNU groff.
+				MANFORMAT=mdoc
+				;;
+			*)
+				# Solaris 2.0 to 11.3 use AT&T nroff.
+				MANFORMAT=man
+				;;
+		esac
 		;;
 	*hpux*)
 		AC_MSG_RESULT(hpux)
