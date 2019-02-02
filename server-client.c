@@ -184,8 +184,14 @@ server_client_create(int fd)
 	TAILQ_INIT(&c->queue);
 
 	c->stdin_data = evbuffer_new();
+	if (c->stdin_data == NULL)
+		fatalx("out of memory");
 	c->stdout_data = evbuffer_new();
+	if (c->stdout_data == NULL)
+		fatalx("out of memory");
 	c->stderr_data = evbuffer_new();
+	if (c->stderr_data == NULL)
+		fatalx("out of memory");
 
 	c->tty.fd = -1;
 	c->title = NULL;
@@ -915,6 +921,7 @@ server_client_handle_key(struct client *c, key_code key)
 {
 	struct mouse_event	*m = &c->tty.mouse;
 	struct session		*s = c->session;
+	struct winlink		*wl;
 	struct window		*w;
 	struct window_pane	*wp;
 	struct timeval		 tv;
@@ -927,7 +934,8 @@ server_client_handle_key(struct client *c, key_code key)
 	/* Check the client is good to accept input. */
 	if (s == NULL || (c->flags & (CLIENT_DEAD|CLIENT_SUSPENDED)) != 0)
 		return;
-	w = s->curw->window;
+	wl = s->curw;
+	w = wl->window;
 
 	/* Update the activity timer. */
 	if (gettimeofday(&c->activity_time, NULL) != 0)
@@ -1118,7 +1126,7 @@ forward_key:
 	if (c->flags & CLIENT_READONLY)
 		return;
 	if (wp != NULL)
-		window_pane_key(wp, c, s, key, m);
+		window_pane_key(wp, c, s, wl, key, m);
 }
 
 /* Client functions that need to happen every loop. */

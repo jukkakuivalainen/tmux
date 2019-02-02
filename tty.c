@@ -258,9 +258,13 @@ tty_open(struct tty *tty, char **cause)
 	event_set(&tty->event_in, tty->fd, EV_PERSIST|EV_READ,
 	    tty_read_callback, tty);
 	tty->in = evbuffer_new();
+	if (tty->in == NULL)
+		fatal("out of memory");
 
 	event_set(&tty->event_out, tty->fd, EV_WRITE, tty_write_callback, tty);
 	tty->out = evbuffer_new();
+	if (tty->out == NULL)
+		fatal("out of memory");
 
 	evtimer_set(&tty->timer, tty_timer_callback, tty);
 
@@ -1098,7 +1102,7 @@ tty_clear_area(struct tty *tty, const struct window_pane *wp, u_int py,
 		 * background colour isn't default (because it doesn't work
 		 * after SGR 0).
 		 */
-		if (tty->term_type == TTY_VT420 && COLOUR_DEFAULT(bg)) {
+		if (tty->term_type == TTY_VT420 && !COLOUR_DEFAULT(bg)) {
 			xsnprintf(tmp, sizeof tmp, "\033[32;%u;%u;%u;%u$x",
 			    py + 1, px + 1, py + ny, px + nx);
 			tty_puts(tty, tmp);
@@ -2236,7 +2240,7 @@ tty_colours(struct tty *tty, const struct grid_cell *gc)
 					tty_puts(tty, "\033[49m");
 				else if (tc->bg != 0)
 					tty_putcode1(tty, TTYC_SETAB, 0);
-				tc->bg = gc->fg;
+				tc->bg = gc->bg;
 			}
 		}
 	}
